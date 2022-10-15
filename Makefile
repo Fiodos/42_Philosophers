@@ -6,7 +6,7 @@
 #    By: fyuzhyk <fyuzhyk@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/10/11 08:28:02 by fyuzhyk           #+#    #+#              #
-#    Updated: 2022/10/11 08:31:19 by fyuzhyk          ###   ########.fr        #
+#    Updated: 2022/10/14 17:56:05 by fyuzhyk          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -22,6 +22,9 @@ OBJ = $(SRC:%.c=%.o)
 
 all : $(NAME)
 
+debug :
+	$(MAKE) CFLAGS="-g" re
+
 $(NAME) : $(SRC)
 	$(CC) $(CFLAGS) $(SRC) -o $(NAME)
 
@@ -31,6 +34,7 @@ $(NAME) : $(SRC)
 fclean : clean
 	rm -f $(NAME)
 
-clean : rm -f $(OBJ)
+clean :
+	rm -f $(OBJ)
 
 re : fclean all

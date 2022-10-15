@@ -1,0 +1,17 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "C++ Launch",
+			"type": "cppdbg",
+			"request": "launch",
+			"program": "${workspaceFolder}/philo",
+			"osx": {
+				"MIMode": "lldb"
+			},
+			"args": ["2", "410", "200", "200"],
+			"cwd": "${workspaceFolder}",
+			"preLaunchTask": "makedebug"
+		}
+	]
+}
