@@ -125,74 +125,33 @@ void	take_forks(t_vars *vars, int id)
 	printf("%d %d has taken fork\n", get_timestamp(vars), id);
 }
 
-// void	*test(void *arg)
-// {
-// 	t_vars	*new_vars;
-// 	int		last_meal;
-// 	int		id;
-
-// 	new_vars = (t_vars *)arg;
-// 	last_meal = 0;
-// 	custom_lock(*new_vars->main_mutex);
-// 	id = new_vars->phil_id++;
-// 	custom_unlock(*new_vars->main_mutex);
-// 	usleep(500);
-// 	gettimeofday(new_vars->start, NULL);
-// 	while (1)
-// 	{
-// 		if (id == 1)
-// 		{
-// 			pthread_mutex_lock(&new_vars->forks[0]);
-// 			pthread_mutex_lock(&new_vars->forks[new_vars->amount - 1]);
-// 		}
-// 		else
-// 		{
-// 			pthread_mutex_lock(&new_vars->forks[id - 1]);
-// 			pthread_mutex_lock(&new_vars->forks[id - 2]);
-// 		}
-// 		if (check_if_dead(new_vars, last_meal, id))
-// 			exit(1);
-// 		printf("%d %d has taken fork\n", get_timestamp(new_vars), id);
-// 		printf("%d %d has taken fork\n", get_timestamp(new_vars), id);
-// 		printf("%d %d is eating\n", get_timestamp(new_vars), id);
-// 		my_sleep(new_vars->time_to_eat, new_vars);
-// 		last_meal = get_timestamp(new_vars);
-// 		if (id == 1)
-// 		{
-// 			pthread_mutex_unlock(&new_vars->forks[0]);
-// 			pthread_mutex_unlock(&new_vars->forks[new_vars->amount - 1]);
-// 		}
-// 		else
-// 		{
-// 			pthread_mutex_unlock(&new_vars->forks[id - 1]);
-// 			pthread_mutex_unlock(&new_vars->forks[id - 2]);
-// 		}
-// 		sleeping(new_vars, id);
-// 		thinking(new_vars, id);
-// 	}
-// 	exit (1);
-// }
-
 void	*test(void *arg)
 {
 	t_vars	*vars;
-	int		last_meal;
+	// int		last_meal;
 	int		id;
 
 	vars = (t_vars *)arg;
-	last_meal = 0;
+	// last_meal = 0;
+	// wait for all philos;
+	while (!vars->created)
+		usleep(10);
 	custom_lock(*vars->main_mutex);
 	id = vars->philo_id++;
 	custom_unlock(*vars->main_mutex);
-	usleep(500); // this should make sure that all threads are running;
-	gettimeofday(vars->start, NULL); // start global clock;
-	if (id % 2 == 0) // even philos sleep at the beginning;
+	// the first philo should start the global clock;
+	if (id == 1)
+		gettimeofday(vars->start, NULL);
+	// even philos sleep at the beginning, in order to avoid deadlocks;
+	if (id % 2 == 0)
 		my_sleep(vars->time_to_eat, vars);
 	while (1)
 	{
+		if (vars->reached_end)
+			return NULL;
 		if (id % 2) // odd;
 		{
-			if (check_if_dead(vars, last_meal, id))
+			if (check_if_dead(vars, vars->last_meal[id - 1], id))
 				exit(1);
 			if (id == 1)
 			{
@@ -200,6 +159,8 @@ void	*test(void *arg)
 				pthread_mutex_lock(&vars->forks[vars->amount - 1]);
 				if (vars->fork_array[0] > 0 && vars->fork_array[vars->amount - 1] > 0)
 				{
+					if (check_if_dead(vars, vars->last_meal[id - 1], id))
+						exit(1);
 					memset(&vars->fork_array[0], 0, 1);
 					printf("%d %d has taken fork\n", get_timestamp(vars), id);
 					memset(&vars->fork_array[vars->amount - 1], 0, 1);
@@ -212,6 +173,8 @@ void	*test(void *arg)
 				pthread_mutex_lock(&vars->forks[id - 2]);
 				if (vars->fork_array[id - 1] > 0 && vars->fork_array[id - 2] > 0)
 				{
+					if (check_if_dead(vars, vars->last_meal[id - 1], id))
+						exit(1);
 					memset(&vars->fork_array[id - 1], 0, 1);
 					printf("%d %d has taken fork\n", get_timestamp(vars), id);
 					memset(&vars->fork_array[id - 2], 0, 1);
@@ -219,8 +182,11 @@ void	*test(void *arg)
 				}
 			}
 			printf("%d %d is eating\n", get_timestamp(vars), id);
-			last_meal = get_timestamp(vars);
+			vars->last_meal[id - 1] = get_timestamp(vars);
 			my_sleep(vars->time_to_eat, vars);
+			pthread_mutex_lock(vars->main_mutex);
+			vars->iterations[id - 1]++;
+			pthread_mutex_unlock(vars->main_mutex);
 			if (id == 1)
 			{
 				memset(&vars->fork_array[0], 1, 1);
@@ -246,19 +212,24 @@ void	*test(void *arg)
 		}
 		else
 		{
-			if (check_if_dead(vars, last_meal, id))
+			if (check_if_dead(vars, vars->last_meal[id - 1], id))
 				exit(1);
 			pthread_mutex_lock(&vars->forks[id - 1]);
 			pthread_mutex_lock(&vars->forks[id - 2]);
 			if (vars->fork_array[id - 1] > 0 && vars->fork_array[id - 2] > 0)
 			{
+				if (check_if_dead(vars, vars->last_meal[id - 1], id))
+					exit(1);
 				memset(&vars->fork_array[id - 1], 0, 1);
 				printf("%d %d has taken fork\n", get_timestamp(vars), id);
 				memset(&vars->fork_array[id - 2], 0, 1);
 				printf("%d %d has taken fork\n", get_timestamp(vars), id);
 				printf("%d %d is eating\n", get_timestamp(vars), id);
-				last_meal = get_timestamp(vars);
+				vars->last_meal[id - 1] = get_timestamp(vars);
 				my_sleep(vars->time_to_eat, vars);
+				pthread_mutex_lock(vars->main_mutex);
+				vars->iterations[id - 1]++;
+				pthread_mutex_unlock(vars->main_mutex);
 				memset(&vars->fork_array[id - 1], 1, 1);
 				memset(&vars->fork_array[id - 2], 1, 1);
 				pthread_mutex_unlock(&vars->forks[id - 1]);
@@ -269,7 +240,6 @@ void	*test(void *arg)
 			while (vars->fork_array[id - 1] == 0 && vars->fork_array[id - 2] == 0)
 				usleep(10);
 		}
-		// exit(0);
 	}
 }
 
@@ -304,6 +274,36 @@ int	*create_fork_array(int amount)
 	return (forks);
 }
 
+int	*create_iterations_array(int amount)
+{
+	int	i;
+	int	*iterations;
+
+	i = 0;
+	iterations = (int *)malloc(sizeof(int) * amount);
+	while (i < amount)
+	{
+		iterations[i] = 0;
+		i++;
+	}
+	return (iterations);
+}
+
+int	*create_last_meal_array(int amount)
+{
+	int	i;
+	int	*last_meal;
+
+	i = 0;
+	last_meal = (int *)malloc(sizeof(int) * amount);
+	while (i < amount)
+	{
+		last_meal[i] = 0;
+		i++;
+	}
+	return (last_meal);
+}
+
 pthread_t	*create_philos(t_vars *vars)
 {
 	pthread_t	*philos;
@@ -316,13 +316,20 @@ pthread_t	*create_philos(t_vars *vars)
 		pthread_create(&philos[i], NULL, &test, vars);
 		i++;
 	}
+	vars->created = 1;
+	return (philos);
+}
+
+void	waiting_for_philos(t_vars *vars, pthread_t *philos)
+{
+	int	i;
+
 	i = 0;
 	while (i < vars->amount)
 	{
 		pthread_join(philos[i], NULL);
 		i++;
 	}
-	return (philos);
 }
 
 void	init_times(char **argv, t_vars *vars)
@@ -332,23 +339,61 @@ void	init_times(char **argv, t_vars *vars)
 	vars->time_to_sleep = ft_atoi(argv[4]);
 }
 
+void	check_iterations(t_vars *vars)
+{
+	int	control;
+	int	i;
+
+	while (1)
+	{
+		control = 0;
+		i = 0;
+		while (i < vars->amount)
+		{
+			if (vars->iterations[i] >= vars->must_eat)
+				control++;
+			i++;
+		}
+		if (control == vars->amount)
+		{
+			vars->reached_end = 1;
+			return ;
+		}
+	}
+}
+
 int main(int argc, char **argv)
 {
 	t_vars		vars;
 	pthread_t	*philos;
 	pthread_mutex_t	main;
 
-	argc = 0;
 	vars.philo_id = 1;
 	vars.amount = ft_atoi(argv[1]);
 	vars.start = malloc(sizeof(struct timeval *));
 	vars.end = malloc(sizeof(struct timeval *));
 	vars.fork_array = create_fork_array(vars.amount);
+	vars.created = 0;
+	vars.reached_end = 0;
+	vars.iterations = create_iterations_array(vars.amount);
+	vars.last_meal = create_last_meal_array(vars.amount);
+	if (argc == 6 && argv[5] != NULL)
+		vars.must_eat = ft_atoi(argv[5]);
+	else
+		vars.must_eat = 0;
 	pthread_mutex_init(&main, NULL);
 	vars.main_mutex = &main;
 	init_times(argv, &vars);
 	vars.forks = create_forks(vars.amount);
 	philos = create_philos(&vars);
+	// check_iterations(&vars);
+	waiting_for_philos(&vars, philos);
+	// int i = 0;
+	// while (i < vars.amount)
+	// {
+	// 	printf("%d\n", vars.iterations[i]);
+	// 	i++;
+	// }
 	printf("End of main\n");
 	return (0);
 }
