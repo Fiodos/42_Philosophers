@@ -6,7 +6,7 @@
 /*   By: fyuzhyk <fyuzhyk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/10/11 09:55:39 by fyuzhyk           #+#    #+#             */
-/*   Updated: 2022/10/17 17:42:23 by fyuzhyk          ###   ########.fr       */
+/*   Updated: 2022/10/17 19:41:32 by fyuzhyk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,6 @@ typedef struct s_philo {
 	int				amount;
 	int				must_eat;
 	int				last_meal;
-	// int				starvation;
 	int				time_to_die;
 	int				time_to_eat;
 	int				time_to_sleep;
