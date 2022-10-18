@@ -6,7 +6,7 @@
 #    By: fyuzhyk <fyuzhyk@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2022/10/11 08:28:02 by fyuzhyk           #+#    #+#              #
-#    Updated: 2022/10/14 17:56:05 by fyuzhyk          ###   ########.fr        #
+#    Updated: 2022/10/18 13:44:56 by fyuzhyk          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,7 +14,7 @@ NAME = philo
 
 SRC_DIR = SRC_DIR
 
-CFLAGS = -Wall -Werror -Wextra -pthread
+CFLAGS = -Wall -Werror -Wextra -pthread -fsanitize=address -g
 
 SRC = src/main.c
 

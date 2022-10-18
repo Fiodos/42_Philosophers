@@ -6,7 +6,7 @@
 /*   By: fyuzhyk <fyuzhyk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/10/11 09:55:39 by fyuzhyk           #+#    #+#             */
-/*   Updated: 2022/10/17 19:41:32 by fyuzhyk          ###   ########.fr       */
+/*   Updated: 2022/10/18 13:46:10 by fyuzhyk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,8 @@
 typedef struct s_vars {
 	pthread_mutex_t	*forks;
 	pthread_mutex_t *main_mutex;
-	struct timeval	*start;
+	struct timeval	start;
+	int				died;
 	int				amount;
 	int				created;
 	int				time_to_die;
@@ -48,6 +49,7 @@ typedef struct s_philo {
 	int				time_to_die;
 	int				time_to_eat;
 	int				time_to_sleep;
+	int				*died;
 	int				*created;
 }				t_philo;
 #endif

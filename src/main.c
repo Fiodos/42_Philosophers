@@ -55,6 +55,7 @@ void	my_sleep(int time, t_philo *philo, int timestamp)
 
 void	custom_lock(pthread_mutex_t *mutex)
 {
+	// printf("inside lock: %p\n", mutex);
 	if (pthread_mutex_lock(mutex) != 0)
 	{
 		perror("mutex lock failed");
@@ -76,7 +77,6 @@ void	locked_print(t_philo *philo, char mode)
 	int	timestamp;
 
 	timestamp = get_timestamp(philo->start);
-	custom_lock(philo->main);
 	if (mode == 'f')
 		printf("%d %d has taken fork\n", timestamp, philo->id);
 	else if (mode == 'e')
@@ -85,23 +85,39 @@ void	locked_print(t_philo *philo, char mode)
 		printf("%d %d is sleeping\n", timestamp, philo->id);
 	else if (mode == 't')
 		printf("%d %d is thinking\n", timestamp, philo->id);
-	custom_unlock(philo->main);
 }
 
 void	handle_philos(t_philo *philo)
 {
 	custom_lock(philo->l_fork);
+	if (*philo->died)
+		return ;
+	custom_lock(philo->main);
 	locked_print(philo, 'f');
+	custom_unlock(philo->main);
 	custom_lock(philo->r_fork);
+	if (*philo->died)
+		return ;
+	custom_lock(philo->main);
 	locked_print(philo, 'f');
 	locked_print(philo, 'e');
+	custom_unlock(philo->main);
 	philo->last_meal = get_timestamp(philo->start);
 	my_sleep(philo->time_to_eat, philo, get_timestamp(philo->start));
-	custom_unlock(philo->l_fork);
+	philo->iterations++;
 	custom_unlock(philo->r_fork);
+	custom_unlock(philo->l_fork);
+	if (*philo->died)
+		return ;
+	custom_lock(philo->main);
 	locked_print(philo, 's');
+	custom_unlock(philo->main);
 	my_sleep(philo->time_to_sleep, philo, get_timestamp(philo->start));
+	if (*philo->died)
+		return ;
+	custom_lock(philo->main);
 	locked_print(philo, 't');
+	custom_unlock(philo->main);
 }
 
 void	*dinner(void *arg)
@@ -110,19 +126,25 @@ void	*dinner(void *arg)
 
 	philo = (t_philo *)arg;
 	// wait until all philos are created;
-	while(!*philo->created)
+	while (!*philo->created)
 		usleep(100);
 	// if philo is even;
 	if (philo->id % 2 == 0)
 		usleep(philo->time_to_eat * 1000);
-	while(1)
+	while (1)
+	{
 		handle_philos(philo);
+		if (philo->iterations == philo->must_eat && philo->must_eat > 0)
+			break ;
+		if (*philo->died)
+			break ;
+	}
 	return (NULL);
 }
 
 pthread_mutex_t	*create_forks(int amount)
 {
-	int	i;
+	int				i;
 	pthread_mutex_t *forks;
 
 	i = 0;
@@ -165,54 +187,31 @@ void	waiting_for_threads(t_vars *vars, pthread_t *threads)
 	}
 }
 
-void	init_vars(char **argv, t_vars *vars)
+void	init_vars(char **argv, t_vars *vars, int argc)
 {
-	if (argv[5])
+	if (argv[5] + argc)
 		vars->must_eat = ft_atoi(argv[5]);
 	vars->amount = ft_atoi(argv[1]);
 	vars->time_to_die = ft_atoi(argv[2]);
 	vars->time_to_eat = ft_atoi(argv[3]);
 	vars->time_to_sleep = ft_atoi(argv[4]);
+	vars->died = 0;
 	vars->created = 0;
-	vars->start = malloc(sizeof(struct timeval *));
-	vars->forks = create_forks(vars->amount);
+	// vars->forks = create_forks(vars->amount);
 }
-
-// void	check_iterations(t_vars *vars)
-// {
-// 	int	control;
-// 	int	i;
-
-// 	while (1)
-// 	{
-// 		control = 0;
-// 		i = 0;
-// 		while (i < vars->amount)
-// 		{
-// 			if (vars->iterations[i] >= vars->must_eat)
-// 				control++;
-// 			i++;
-// 		}
-// 		if (control == vars->amount)
-// 		{
-// 			vars->reached_end = 1;
-// 			return ;
-// 		}
-// 	}
-// }
 
 void	init_forks(t_philo *philo, t_vars *vars, int index)
 {
 	philo->forks = vars->forks;
 	if (philo->id == 1)
 	{
-		philo->r_fork = &philo->forks[0];
-		philo->l_fork = &philo->forks[philo->amount - 1];
+		philo->r_fork = &vars->forks[0];
+		philo->l_fork = &vars->forks[philo->amount - 1];
 	}
 	else
 	{
-		philo->r_fork = &philo->forks[index];
-		philo->l_fork = &philo->forks[index - 1];
+		philo->r_fork = &vars->forks[index];
+		philo->l_fork = &vars->forks[index - 1];
 	}
 }
 
@@ -221,7 +220,7 @@ void	init_times(t_philo *philo, t_vars *vars)
 	philo->time_to_die = vars->time_to_die;
 	philo->time_to_eat = vars->time_to_eat;
 	philo->time_to_sleep = vars->time_to_sleep;
-	philo->start = vars->start;
+	philo->start = &vars->start;
 }
 
 t_philo	*init_philos(t_vars *vars,  pthread_mutex_t *main)
@@ -234,11 +233,12 @@ t_philo	*init_philos(t_vars *vars,  pthread_mutex_t *main)
 	while (i < vars->amount)
 	{
 		if (vars->must_eat)
-			philo[i].must_eat = vars->amount;
+			philo[i].must_eat = vars->must_eat;
 		philo[i].id = i + 1;
 		philo[i].amount = vars->amount;
 		init_times(&philo[i], vars);
 		init_forks(&philo[i], vars, i);
+		philo[i].died = &vars->died;
 		philo[i].main = main;
 		philo[i].last_meal = 0;
 		philo[i].iterations = 0;
@@ -248,28 +248,52 @@ t_philo	*init_philos(t_vars *vars,  pthread_mutex_t *main)
 	return (philo);
 }
 
-void	mr_calorie_deficit(t_philo *philos, t_vars *vars, pthread_mutex_t main)
+void	mr_calorie_deficit(t_philo *philos, t_vars *vars)
 {
 	int	i;
 	int	timestamp;
+	int	have_eaten;
 
+	have_eaten = 0;
 	while (1)
 	{
 		i = 0;
 		while (i < vars->amount)
 		{
-			timestamp = get_timestamp(vars->start);
-			if (philos[i].last_meal + philos[i].time_to_die < timestamp)
+			timestamp = get_timestamp(&vars->start);
+			if (philos[i].iterations >= vars->must_eat && vars->must_eat > 0)
 			{
-				pthread_mutex_lock(&main);
-				printf("%d %d died!\n", timestamp, philos[i].id);
-				pthread_mutex_unlock(&main);
+				have_eaten++;
+				if (have_eaten == vars->amount)
+					return ;
+			}
+			else if (philos[i].last_meal + philos[i].time_to_die < timestamp)
+			{
+				vars->died = 1;
+				pthread_mutex_lock(philos[i].main);
+				printf("%d %d died\n", timestamp, philos[i].id);
+				pthread_mutex_unlock(philos[i].main);
 				// need to close all the threads here!;
-				exit (0);
+				return ;
 			}
 			i++;
 		}
 	}
+}
+
+void	free_all(t_vars *vars, pthread_t *threads, t_philo *philos)
+{
+	int	i;
+
+	i = 0;
+	while (i < vars->amount)
+	{
+		pthread_mutex_destroy(&vars->forks[i]);
+		i++;
+	}
+	free(threads);
+	free(philos);
+	free(vars->forks);
 }
 
 int main(int argc, char **argv)
@@ -281,11 +305,12 @@ int main(int argc, char **argv)
 
 	argc = 0;
 	pthread_mutex_init(&main_mutex, NULL);
-	init_vars(argv, &vars);
+	init_vars(argv, &vars, argc);
+	vars.forks = create_forks(vars.amount);
 	philos = init_philos(&vars, &main_mutex);
 	threads = create_threads(&vars, philos);
-	mr_calorie_deficit(philos, &vars, main_mutex);
+	mr_calorie_deficit(philos, &vars);
 	waiting_for_threads(&vars, threads);
-	printf("End of main\n");
+	free_all(&vars, threads, philos);
 	return (0);
 }
