@@ -6,7 +6,7 @@
 /*   By: fyuzhyk <fyuzhyk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/10/18 20:44:28 by fyuzhyk           #+#    #+#             */
-/*   Updated: 2022/10/19 16:06:52 by fyuzhyk          ###   ########.fr       */
+/*   Updated: 2022/10/19 17:33:16 by fyuzhyk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,8 @@ int	init_vars(char **argv, t_vars *vars)
 {
 	if (argv[5])
 		vars->must_eat = ft_atoi(argv[5]);
+	else
+		vars->must_eat = 0;
 	vars->amount = ft_atoi(argv[1]);
 	vars->time_to_die = ft_atoi(argv[2]);
 	vars->time_to_eat = ft_atoi(argv[3]);

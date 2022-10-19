@@ -6,7 +6,7 @@
 /*   By: fyuzhyk <fyuzhyk@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2022/10/18 20:30:11 by fyuzhyk           #+#    #+#             */
-/*   Updated: 2022/10/19 16:19:13 by fyuzhyk          ###   ########.fr       */
+/*   Updated: 2022/10/19 17:35:17 by fyuzhyk          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,8 +69,7 @@ t_philo	*init_philos(t_vars *vars)
 		return (NULL);
 	while (i < vars->amount)
 	{
-		if (vars->must_eat)
-			philo[i].must_eat = vars->must_eat;
+		philo[i].must_eat = vars->must_eat;
 		init_philo_vars(vars, &philo[i], i);
 		init_times(&philo[i], vars);
 		init_forks(&philo[i], vars, i);
