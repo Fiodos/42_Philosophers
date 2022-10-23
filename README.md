@@ -1,7 +1,7 @@
 # Philosophers
 Philosophers - 42Heilbronn
 
-This project was about solving the famous [Dining Philosophers Problem]
+This project was an introduction to the concept of multi-threading, which should be understood by solving the famous [Dining Philosophers Problem].
 
 
 
